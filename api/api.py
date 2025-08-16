@@ -43,17 +43,16 @@ def get_code(request, request_body: GetCodeRequest):
         if sms_data:
             # 提取所需字段
             # 如果短信为空，则get_sms_data()返回数据为空None，则直接跳过，继续下一轮获取。
-            # phone_number = sms_data.get("phone_number", "")
-            try:
+            phone_number = sms_data.get("phone_number", "")
             sms_msg = sms_data.get("sms_msg", "")
             sms_timestamp = sms_data.get("sms_time", "")
-    
+            # 验证必要字段
+            if not sms_msg or not sms_timestamp:
+                del_sms_data()
+                continue
             # 这里来解析的短信内容
             re_pattern = re.compile(sms_code_pattern)
             match = re_pattern.search(sms_msg)
-            else:
-                del_sms_data()  # 删除webhook上的所有信息
-                continue
         else:
             continue
         if match:
