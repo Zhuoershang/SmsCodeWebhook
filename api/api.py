@@ -71,6 +71,7 @@ def get_code(request, request_body: GetCodeRequest):
             if not is_within_5_minutes(sms_timestamp):
                 print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码过期5min")  # 输出到 stdout
                 del_sms_data()  # 删除webhook上的所有信息
+                continue
             # 这里来解析的短信内容
             re_pattern = re.compile(sms_code_pattern)
             match = re_pattern.search(sms_msg)
