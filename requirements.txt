@@ -1,3 +1,6 @@
 django
 django-ninja
 django-redis
+requests
+json
+datetime
