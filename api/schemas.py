@@ -15,3 +15,6 @@ class ResponseSchema(Schema):
     err_code: int
     message: str
     data: Optional[Dict] = None
+
+class GetSmsMsgRequest(Schema):
+    phone_number: str
