@@ -53,7 +53,7 @@ def get_code(request, request_body: GetCodeRequest):
         if match:
             code = match.group(0)
         # 检查验证码有效性和时间有效性
-        if code and is_within_5_minutes:
+        if code and is_within_5_minutes(sms_timestamp):
             del_sms_data()  # 删除webhook上的所有信息
             return ResponseSchema(err_code=0, message="Success", data={"code": code})
 
