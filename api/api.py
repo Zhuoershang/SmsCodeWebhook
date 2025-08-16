@@ -93,7 +93,7 @@ def del_sms_data():
     """从 Webhook.site 删除所有的的短信数据"""
     url = "https://webhook.site/token/b7522351-425c-477b-923f-a2faf086cd3d/request"
     try:
-        response = requests.del(url)
+        response = requests.delete(url)
         response.raise_for_status()  # 检查HTTP错误
         return response.json()
     except requests.exceptions.RequestException as e:
