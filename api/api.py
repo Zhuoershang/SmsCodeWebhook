@@ -78,7 +78,7 @@ def send_sms_msg(request, request_body: SendSmsMsgRequest):
 
 def get_sms_data():
     """从 Webhook.site 获取最新的短信数据"""
-    url = "https://webhook.site/token/b7522351-425c-477b/request/latest/raw"
+    url = "https://webhook.site/token/b7522351-425c-477b-923f-a2faf086cd3d/request/latest/raw"
     try:
         response = requests.get(url)
         response.raise_for_status()  # 检查HTTP错误
@@ -102,7 +102,7 @@ def del_sms_data():
     except json.JSONDecodeError:
         print("响应不是有效的JSON格式")
         return None
-b7522351-425c-477b-923f-a2faf086cd3d
+
 def extract_verification_code(sms_msg):
     """从短信内容中提取验证码"""
     # 使用正则表达式匹配6位数字验证码
