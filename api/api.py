@@ -35,8 +35,7 @@ def get_code(request, request_body: GetCodeRequest):
 @api.post("/getCode", response=ResponseSchema)
 def get_code(request, request_body: GetCodeRequest):
     start_time = time.time()
-    key = request_body.phone_number
-    
+    # key = request_body.phone_number
     while True:
         '''优先判断是否超时'''
         if time.time() - start_time > MAX_WAIT_TIME:
@@ -46,31 +45,44 @@ def get_code(request, request_body: GetCodeRequest):
             
         """处理短信数据并生成响应"""
         sms_data = get_sms_data()
-        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--请求结果:{sms_data}")  # 输出到 stdout
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--get_sms_data结果:{sms_data}")  # 输出到 stdout
         if sms_data:
             # 提取所需字段
             # 如果短信为空，则get_sms_data()返回数据为空None，则直接跳过，继续下一轮获取。
-            # phone_number = sms_data.get("phone_number", "")
-            sms_msg = sms_data.get("sms_msg", "")
-            sms_timestamp = sms_data.get("sms_time", "")
+            try:
+                # phone_number = sms_data.get("phone_number", "")
+                sms_msg = sms_data.get("sms_msg", "")
+                sms_timestamp = sms_data.get("sms_time", "")
+            except (AttributeError, TypeError) as e:
+                sms_msg = 0
+                sms_timestamp = 0
+                del_sms_data()
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--请求格式错误: {e}")
+            except Exception as e:
+                sms_msg = 0
+                sms_timestamp = 0
+                del_sms_data()
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--请求格式错误: {e}")
             # 验证必要字段
             if not sms_msg or not sms_timestamp:
                 del_sms_data()
                 continue
+            # 检查验证码有效性和时间有效性
+            if not is_within_5_minutes(sms_timestamp):
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码过期5min")  # 输出到 stdout
+                del_sms_data()  # 删除webhook上的所有信息
             # 这里来解析的短信内容
             re_pattern = re.compile(sms_code_pattern)
             match = re_pattern.search(sms_msg)
+            if match:
+                code = match.group(0)
+                if code :
+                    del_sms_data()  # 删除webhook上的所有信息
+                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码解析成功且有效:{code}")  # 输出到 stdout
+                    return ResponseSchema(err_code=0, message="Success", data={"code": code})
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码解析失败")  # 输出到 stdout
         else:
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--无效信息，再次尝试")  # 输出到 stdout
-            continue
-        if match:
-            code = match.group(0)
-        # 检查验证码有效性和时间有效性
-        if code and is_within_5_minutes(sms_timestamp):
-            del_sms_data()  # 删除webhook上的所有信息
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码解析成功且有效:{code}")  # 输出到 stdout
-            return ResponseSchema(err_code=0, message="Success", data={"code": code})
-        
         time.sleep(WAIT_TIME)
 
 
@@ -94,13 +106,14 @@ def get_sms_data():
     url = "https://webhook.site/token/b7522351-425c-477b-923f-a2faf086cd3d/request/latest/raw"
     try:
         response = requests.get(url)
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--响应data:{response}")  # 输出到 stdout
         response.raise_for_status()  # 检查HTTP错误
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"请求失败: {e}")
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--请求失败: {e}")
         return None
     except json.JSONDecodeError:
-        print("响应不是有效的JSON格式")
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--响应不是有效的JSON格式")
         return None
 def del_sms_data():
     """从 Webhook.site 删除所有的的短信数据"""
@@ -134,7 +147,7 @@ def is_within_5_minutes(sms_timestamp):
     """检查时间戳是否在5分钟内"""
     try:
         # 将毫秒时间戳转换为秒
-        sms_time = datetime.fromtimestamp(int(sms_timestamp) / 1000)
+        sms_time = datetime.fromtimestamp(int(sms_timestamp))
         current_time = datetime.now()
         
         # 计算时间差
