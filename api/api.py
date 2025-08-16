@@ -38,9 +38,15 @@ def get_code(request, request_body: GetCodeRequest):
     key = request_body.phone_number
     
     while True:
+        '''优先判断是否超时'''
+        if time.time() - start_time > MAX_WAIT_TIME:
+            del_sms_data()
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码获取超时")  # 输出到 stdout
+            return ResponseSchema(err_code=408, message="获取验证码超时")
+            
         """处理短信数据并生成响应"""
         sms_data = get_sms_data()
-        print(f"请求结果:{sms_data}")  # 输出到 stdout
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--请求结果:{sms_data}")  # 输出到 stdout
         if sms_data:
             # 提取所需字段
             # 如果短信为空，则get_sms_data()返回数据为空None，则直接跳过，继续下一轮获取。
@@ -55,19 +61,15 @@ def get_code(request, request_body: GetCodeRequest):
             re_pattern = re.compile(sms_code_pattern)
             match = re_pattern.search(sms_msg)
         else:
-            print("解析失败，再次尝试")  # 输出到 stdout
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--无效信息，再次尝试")  # 输出到 stdout
             continue
         if match:
             code = match.group(0)
         # 检查验证码有效性和时间有效性
         if code and is_within_5_minutes(sms_timestamp):
             del_sms_data()  # 删除webhook上的所有信息
-            print(f"验证码解析成功且有效:{code}")  # 输出到 stdout
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码解析成功且有效:{code}")  # 输出到 stdout
             return ResponseSchema(err_code=0, message="Success", data={"code": code})
-
-        if time.time() - start_time > MAX_WAIT_TIME:
-            print(f"验证码获取超时")  # 输出到 stdout
-            return ResponseSchema(err_code=408, message="获取验证码超时")
         
         time.sleep(WAIT_TIME)
 
