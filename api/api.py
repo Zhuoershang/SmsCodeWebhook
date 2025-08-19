@@ -36,6 +36,7 @@ def get_code(request, request_body: GetCodeRequest):
 def get_code(request, request_body: GetCodeRequest):
     start_time = time.time()
     # key = request_body.phone_number
+    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--接收到验证码请求，正在处理...")  # 输出到 stdout
     while True:
         '''优先判断是否超时'''
         if time.time() - start_time > MAX_WAIT_TIME:
@@ -69,7 +70,7 @@ def get_code(request, request_body: GetCodeRequest):
                 continue
             # 检查验证码有效性和时间有效性
             if not is_within_5_minutes(sms_timestamp):
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码过期5min")  # 输出到 stdout
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}--验证码接收于{datetime.fromtimestamp(int(sms_timestamp)+28800).strftime('%Y-%m-%d %H:%M:%S')}--过期超过5min")  # 输出到 stdout
                 del_sms_data()  # 删除webhook上的所有信息
                 continue
             # 这里来解析的短信内容
